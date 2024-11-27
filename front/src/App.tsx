@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLatest } from "./hooks/useLatest";
 import { isNumber } from "./utils";
+import { useEvent } from "./hooks/useEvent";
 
 /*
 
-- рассчитывать время
 - собирать статистику (слова в минуту + точность)
 - управление клавиатурой (стар / следующий тест)
-- показывать ошибки / прогресс по ходу написания
+  - restart по клику на alt+r
+
+- каретка???
+- (точность времени???)
+- пропускать по проблему??? (возможно не стоит)
 
 */
 
@@ -39,89 +43,221 @@ import { isNumber } from "./utils";
 const testInput =
   "Lorem ipsum dolor sit amet consectetur adipisicing elit. Consectetur, eaque.";
 
-const TIME_DURATION = 30_000;
+const TIME_DURATION = 10_000;
 
 export function App() {
-  const [started, setStarted] = useState(false);
+  const [status, setStatus] = useState<"stopped" | "started" | "finished">(
+    "stopped"
+  );
   const [typedText, setTypedText] = useState("");
   const [timePassed, setTimePassed] = useState(0);
+  const [statistics, setStatistics] = useState({
+    typed: 0,
+    correct: 0,
+    incorrect: 0,
+  });
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const latestStarted = useLatest(started);
+  const latestStatus = useLatest(status);
+  const intervalId = useRef<number | null>(null);
 
-  console.log(typedText);
+  const startHandler = useEvent(() => {
+    const textArea = textAreaRef.current;
+
+    if (!textArea) {
+      return;
+    }
+
+    if (status === "started") {
+      return;
+    }
+
+    setStatus("started");
+
+    textArea.focus();
+
+    const startTime = performance.now();
+
+    intervalId.current = setInterval(() => {
+      const currentTime = performance.now();
+
+      const newTimePassed = timePassed + currentTime - startTime;
+
+      setTimePassed(newTimePassed);
+
+      if (newTimePassed > TIME_DURATION) {
+        stopHandler(true);
+      }
+    }, 1_000);
+  });
+
+  const stopHandler = useEvent((ended: boolean = false) => {
+    setStatus(ended ? "finished" : "stopped");
+
+    if (isNumber(intervalId.current)) {
+      clearInterval(intervalId.current);
+      intervalId.current = null;
+    }
+  });
+
+  const restart = () => {
+    setStatistics({
+      typed: 0,
+      correct: 0,
+      incorrect: 0,
+    });
+    setTypedText("");
+    setStatus("stopped");
+    setTimePassed(0);
+  };
 
   useEffect(() => {
-    let intervalId: number | null = null;
-
     const handleGlobalKeydown = (event: KeyboardEvent) => {
-      console.log(event);
       const key = event.key;
 
-      if (latestStarted.current) {
+      if (latestStatus.current === "started") {
         return;
       }
 
       if (key.length !== 1) {
         return;
       }
-      const textArea = textAreaRef.current;
 
-      if (!textArea) {
-        return;
-      }
-
-      textArea.focus();
-      setStarted(true);
-
-      const startTime = performance.now();
-      intervalId = setInterval(() => {
-        const newTimePassed = performance.now() - startTime;
-        setTimePassed(Math.floor(newTimePassed / 1000));
-        if (newTimePassed > TIME_DURATION) {
-          setStarted(false);
-          if (isNumber(intervalId)) {
-            clearInterval(intervalId);
-          }
-          intervalId = null;
-        }
-      }, 1_000);
+      startHandler();
     };
 
     window.addEventListener("keydown", handleGlobalKeydown);
 
     return () => {
       window.removeEventListener("keydown", handleGlobalKeydown);
-      if (isNumber(intervalId)) {
-        clearInterval(intervalId);
-      }
     };
-  }, []);
+  }, [startHandler]);
 
   const handleTypedTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTypedText(e.target.value);
+    const newValue = e.target.value;
+
+    setTypedText(newValue);
+
+    if (newValue.length < typedText.length) {
+      return;
+    }
+
+    const newCharIndex = newValue.length - 1;
+    const newChar = newValue[newCharIndex];
+
+    if (newChar === testInput[newCharIndex]) {
+      setStatistics((stats) => ({
+        ...stats,
+        correct: stats.correct + 1,
+        typed: stats.typed + 1,
+      }));
+    } else {
+      setStatistics((stats) => ({
+        ...stats,
+        incorrect: stats.incorrect + 1,
+        typed: stats.typed + 1,
+      }));
+    }
   };
+
+  const handleBlur = () => {
+    stopHandler();
+  };
+
+  const wpm = useMemo(() => {
+    if (status !== "finished") {
+      return;
+    }
+
+    const typedWords = typedText.split(" ").filter(Boolean);
+    const testWords = testInput.split(" ").filter(Boolean);
+
+    const wordsTyped = typedWords.reduce((acc, word, index) => {
+      if (word === testWords[index]) {
+        return acc + 1;
+      }
+
+      return acc;
+    }, 0);
+
+    return (wordsTyped * 60_000) / TIME_DURATION;
+  }, [status, typedText, testInput]);
 
   return (
     <div
       style={{
-        display: "flex",
         flex: 1,
+        display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        flexDirection: "column",
       }}
     >
-      <div>{started ? "Started" : "Start typing"}</div>
-      <div>Time: {timePassed}</div>
-      <div style={{ fontSize: "25px" }}>{testInput}</div>
-      <div>{typedText}</div>
-      <textarea
-        style={{ padding: "0", border: "0", height: 0, overflow: "hidden" }}
-        ref={textAreaRef}
-        value={typedText}
-        onChange={handleTypedTextChange}
-      />
+      {status === "finished" ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div>Your are done!</div>
+          <div>
+            <div>
+              Accuracy:{" "}
+              {Math.round((statistics.correct / statistics.typed) * 100)}%
+            </div>
+            <div>WPM: {wpm}</div>
+          </div>
+          <button onClick={restart}>Restart</button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+          }}
+        >
+          <div>{status === "started" ? "Started" : "Start typing"}</div>
+          <div>Time: {Math.floor(timePassed / 1_000)}</div>
+
+          <TypingProgress text={testInput} textTyped={typedText} />
+
+          <div>{typedText}</div>
+          <textarea
+            style={{ padding: "0", border: "0", height: 0, overflow: "hidden" }}
+            ref={textAreaRef}
+            value={typedText}
+            onChange={handleTypedTextChange}
+            onBlur={handleBlur}
+          />
+        </div>
+      )}
     </div>
   );
+}
+
+interface TypingProgressProps {
+  text: string;
+  textTyped: string;
+}
+
+function TypingProgress({ text, textTyped }: TypingProgressProps) {
+  const letters = useMemo(() => {
+    return text.split("").map((item, index) => {
+      const typedLetter = textTyped[index];
+      const color =
+        typedLetter === item ? "white" : !typedLetter ? "#a1a1a1" : "red";
+
+      return (
+        <span key={index} style={{ color }}>
+          {item}
+        </span>
+      );
+    });
+  }, [text, textTyped]);
+
+  return <div style={{ fontSize: "25px" }}>{letters}</div>;
 }
