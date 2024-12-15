@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "@typescript-eslint/typescript-estree": "^8.18.0",
     "hono": "^4.6.10"
   },
   "devDependencies": {

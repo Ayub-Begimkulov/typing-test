@@ -20,5 +20,5 @@ export function TypingProgress({ text, textTyped }: TypingProgressProps) {
     });
   }, [text, textTyped]);
 
-  return <div style={{ fontSize: "25px" }}>{letters}</div>;
+  return <pre style={{ fontSize: "25px", padding: "0 24px" }}>{letters}</pre>;
 }

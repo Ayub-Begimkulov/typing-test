@@ -170,11 +170,11 @@ export function TypingTest({ inputText, timeDuration }: TypingTestProps) {
       }}
     >
       <div>{status === "started" ? "Started" : "Start typing"}</div>
-      <div>Time: {Math.floor(timePassed / 1_000)}</div>
+      <div>Time: {Math.floor(timeDuration - timePassed / 1_000)}</div>
 
       <TypingProgress text={inputText} textTyped={typedText} />
 
-      <div>{typedText}</div>
+      <pre>{typedText}</pre>
 
       <textarea
         style={{ padding: "0", border: "0", height: 0, overflow: "hidden" }}

@@ -26,7 +26,7 @@ export function App() {
     }
 
     return WORDS_INPUT;
-  }, []);
+  }, [settings]);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
