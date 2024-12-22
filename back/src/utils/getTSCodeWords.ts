@@ -5,7 +5,7 @@ export function getTSCodeWords(code: string) {
   const parsed = parse(code, { tokens: true, comment: true, jsx: true });
 
   return getTSCodeTokens(parsed.tokens, parsed.comments).map((token) => ({
-    word: token.value,
+    text: token.value,
     type: token.type,
     range: token.range,
   }));

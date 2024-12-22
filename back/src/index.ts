@@ -1,14 +1,21 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { testsMap } from "./tests.js";
-import { getTSCodeTokens } from "./utils/getTSCodeTokens.js";
-import { getTSCodeWords } from "./utils/getTSCodeWords.js";
+import { cors } from "hono/cors";
+import { hasOwn } from "./utils/hasOwn.js";
 
 const app = new Hono();
 
-app.get("/typing-test/:type", (ctx) => {
+app.use(cors());
+
+app.get("/typing-tests", (ctx) => {
+  return ctx.json(Object.keys(testsMap));
+});
+
+app.get("/typing-tests/:type", (ctx) => {
   const type = ctx.req.param("type");
-  if (!(type in testsMap)) {
+
+  if (!hasOwn(testsMap, type)) {
     return ctx.json(
       {
         message: "Invalid type",
@@ -17,19 +24,7 @@ app.get("/typing-test/:type", (ctx) => {
     );
   }
 
-  if (type === "typescript") {
-    return ctx.json({
-      type,
-      text: testsMap[type],
-      words: getTSCodeWords(testsMap[type]),
-    });
-  }
-
-  return ctx.json({
-    type,
-    text: testsMap[type],
-    words: [],
-  });
+  return ctx.json(testsMap[type]);
 });
 
 app.get("/health-check", (c) => {

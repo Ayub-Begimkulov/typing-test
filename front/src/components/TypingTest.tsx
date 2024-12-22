@@ -1,17 +1,22 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { WORDS_INPUT } from "../constants/words";
 import { useEvent } from "../hooks/useEvent";
 import { useLatest } from "../hooks/useLatest";
 import { isNumber } from "../utils";
 import { TypingProgress } from "./TypingProgress";
 import { Statistics } from "./Statistics";
+import { WordConfig } from "../hooks/queries/useTestQuery";
 
 interface TypingTestProps {
   timeDuration: number;
   inputText: string;
+  wordsConfig: WordConfig[];
 }
 
-export function TypingTest({ inputText, timeDuration }: TypingTestProps) {
+export function TypingTest({
+  inputText,
+  timeDuration,
+  wordsConfig,
+}: TypingTestProps) {
   const [status, setStatus] = useState<"stopped" | "started" | "finished">(
     "stopped"
   );
@@ -112,7 +117,7 @@ export function TypingTest({ inputText, timeDuration }: TypingTestProps) {
     const newCharIndex = newValue.length - 1;
     const newChar = newValue[newCharIndex];
 
-    if (newChar === WORDS_INPUT[newCharIndex]) {
+    if (newChar === inputText[newCharIndex]) {
       setStatistics((stats) => ({
         ...stats,
         correct: stats.correct + 1,
@@ -136,19 +141,41 @@ export function TypingTest({ inputText, timeDuration }: TypingTestProps) {
       return;
     }
 
-    const typedWords = typedText.split(" ").filter(Boolean);
-    const testWords = WORDS_INPUT.split(" ").filter(Boolean);
+    let correctWords = 0;
+    let incorrectWords = 0;
 
-    const wordsTyped = typedWords.reduce((acc, word, index) => {
-      if (word === testWords[index]) {
-        return acc + 1;
+    let previousRangeEnd = 0;
+    for (const item of wordsConfig) {
+      if (item.range[1] >= typedText.length) {
+        break;
       }
 
-      return acc;
-    }, 0);
+      const wordOriginal = inputText.slice(item.range[0], item.range[1]);
+      const wordTyped = typedText.slice(item.range[0], item.range[1]);
 
-    return (wordsTyped * 60) / timeDuration;
-  }, [status, typedText, WORDS_INPUT]);
+      const symbolsBeforeOriginal = inputText.slice(
+        previousRangeEnd,
+        item.range[0]
+      );
+      const symbolsBeforeTyped = typedText.slice(
+        previousRangeEnd,
+        item.range[0]
+      );
+
+      if (
+        symbolsBeforeOriginal === symbolsBeforeTyped &&
+        wordOriginal === wordTyped
+      ) {
+        correctWords++;
+      } else {
+        incorrectWords++;
+      }
+
+      previousRangeEnd = item.range[1];
+    }
+
+    return (correctWords * 60) / timeDuration;
+  }, [status, typedText, inputText]);
 
   if (status === "finished") {
     return (
@@ -169,13 +196,6 @@ export function TypingTest({ inputText, timeDuration }: TypingTestProps) {
         flexDirection: "column",
       }}
     >
-      <div>{status === "started" ? "Started" : "Start typing"}</div>
-      <div>Time: {Math.floor(timeDuration - timePassed / 1_000)}</div>
-
-      <TypingProgress text={inputText} textTyped={typedText} />
-
-      <pre>{typedText}</pre>
-
       <textarea
         style={{ padding: "0", border: "0", height: 0, overflow: "hidden" }}
         ref={textAreaRef}
@@ -183,6 +203,12 @@ export function TypingTest({ inputText, timeDuration }: TypingTestProps) {
         onChange={handleTypedTextChange}
         onBlur={handleBlur}
       />
+      <div>{status === "started" ? "Started" : "Start typing"}</div>
+      <div>Time: {Math.floor(timeDuration - timePassed / 1_000)}</div>
+
+      <TypingProgress text={inputText} textTyped={typedText} />
+
+      <pre>{typedText}</pre>
     </div>
   );
 }

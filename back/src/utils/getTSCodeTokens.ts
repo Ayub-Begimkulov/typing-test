@@ -18,10 +18,10 @@ export function getTSCodeTokens(
     const token = tokens[tokensIndex];
     const comment = comments[commentsIndex];
 
-    // if (notWordTokens.includes(token.type)) {
-    //   tokensIndex++;
-    //   continue;
-    // }
+    if (notWordTokens.includes(token.type)) {
+      tokensIndex++;
+      continue;
+    }
 
     const tokenRangeStart = token?.range[0] ?? Infinity;
     const commentRangeStart = comment?.range[0] ?? Infinity;

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Settings } from "../types/settings";
 import { Modal } from "./Modal";
-import { TEST_TYPES } from "../constants/testTypes";
 import { includes } from "../utils/includes";
+import { useTestTypesQuery } from "../hooks/queries/useTestTypesQuery";
 
 const MIN_DURATION = 10;
 
@@ -26,6 +26,7 @@ export function SettingsModal({
   const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>(
     {}
   );
+  const { types = [], status } = useTestTypesQuery();
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseInt(e.target.value, 10);
@@ -49,7 +50,7 @@ export function SettingsModal({
   const handleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
 
-    if (!includes(TEST_TYPES, value)) {
+    if (!includes(types, value)) {
       setErrors({ ...errors, type: "invalid type" });
       return;
     } else {
@@ -66,7 +67,7 @@ export function SettingsModal({
       return;
     }
 
-    if (!includes(TEST_TYPES, newSettings.type)) {
+    if (!includes(types, newSettings.type)) {
       return;
     }
 
@@ -77,8 +78,16 @@ export function SettingsModal({
     onClose();
   };
 
-  return (
-    <Modal open={open} onClose={onClose}>
+  const renderContent = () => {
+    if (status === "error") {
+      return <div>Error happened...</div>;
+    }
+
+    if (status === "pending") {
+      return <div>Loading...</div>;
+    }
+
+    return (
       <form onSubmit={handleSubmit}>
         <h3>Time</h3>
         <input
@@ -90,7 +99,7 @@ export function SettingsModal({
         <div style={{ color: "red" }}>{errors.duration}</div>
         <h3>Language</h3>
         <select value={newSettings.type} onChange={handleTypeChange}>
-          {TEST_TYPES.map((type) => (
+          {types.map((type) => (
             <option key={type} value={type}>
               {type}
             </option>
@@ -99,6 +108,12 @@ export function SettingsModal({
         <div style={{ color: "red" }}>{errors.type}</div>
         <button>Submit</button>
       </form>
+    );
+  };
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      {renderContent()}
     </Modal>
   );
 }

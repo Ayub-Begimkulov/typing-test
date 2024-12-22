@@ -1,16 +1,19 @@
-import { useMemo, useState } from "react";
-import { WORDS_INPUT } from "./constants/words";
+import { useState } from "react";
 import { TypingTest } from "./components/TypingTest";
 import { Settings } from "./types/settings";
 import { SettingsModal } from "./components/SettingsModal";
-import { TS_CODE_INPUT } from "./constants/code";
+import { useTestQuery } from "./hooks/queries/useTestQuery";
+
+const DEFAULT_TYPE = "typescript";
 
 export function App() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({
-    type: "typescript",
+    type: DEFAULT_TYPE,
     duration: 20,
   });
+
+  const { testData, status } = useTestQuery(settings.type);
 
   const handleSettingsOpen = () => {
     setSettingsModalOpen(true);
@@ -20,13 +23,23 @@ export function App() {
     setSettingsModalOpen(false);
   };
 
-  const inputText = useMemo(() => {
-    if (settings.type === "typescript") {
-      return TS_CODE_INPUT;
+  const renderContent = () => {
+    if (status === "error") {
+      return <div>Error happened...</div>;
     }
 
-    return WORDS_INPUT;
-  }, [settings]);
+    if (status === "pending") {
+      return <div>Loading...</div>;
+    }
+
+    return (
+      <TypingTest
+        timeDuration={settings.duration}
+        inputText={testData?.text ?? ""}
+        wordsConfig={testData?.words ?? []}
+      />
+    );
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -55,7 +68,7 @@ export function App() {
           justifyContent: "center",
         }}
       >
-        <TypingTest timeDuration={settings.duration} inputText={inputText} />
+        {renderContent()}
       </div>
     </div>
   );
