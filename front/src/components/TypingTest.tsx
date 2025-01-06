@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { useEvent } from "../hooks/useEvent";
 import { useLatest } from "../hooks/useLatest";
 import { isNumber } from "../utils";
@@ -29,6 +29,7 @@ export function TypingTest({
   });
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const currentLetterRef = useRef<HTMLSpanElement>(null);
   const latestStatus = useLatest(status);
   const intervalId = useRef<number | null>(null);
 
@@ -206,9 +207,54 @@ export function TypingTest({
       <div>{status === "started" ? "Started" : "Start typing"}</div>
       <div>Time: {Math.floor(timeDuration - timePassed / 1_000)}</div>
 
-      <TypingProgress text={inputText} textTyped={typedText} />
+      <TypingProgress
+        text={inputText}
+        textTyped={typedText}
+        currentLetterRef={currentLetterRef}
+      />
+      <Caret targetElementRef={currentLetterRef} typedText={typedText} />
 
+      {/* TODO delete */}
       <pre>{typedText}</pre>
     </div>
+  );
+}
+
+interface CaretProps {
+  typedText: string;
+  targetElementRef: React.RefObject<HTMLElement>;
+}
+
+function Caret({ targetElementRef, typedText }: CaretProps) {
+  const [rect, setRect] = useState<DOMRectReadOnly | null>(null);
+
+  useLayoutEffect(() => {
+    const element = targetElementRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const sizes = element.getBoundingClientRect();
+    setRect(sizes);
+  }, [typedText]);
+
+  if (!rect) {
+    return null;
+  }
+
+  return (
+    <span
+      style={{
+        height: rect.height,
+        width: 2,
+        background: "yellow",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        transform: `translate3d(${rect.left}px, ${rect.top}px, 0)`,
+        transition: "transform 100ms",
+      }}
+    ></span>
   );
 }

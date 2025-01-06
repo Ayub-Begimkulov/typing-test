@@ -1,11 +1,34 @@
 import { getTSCodeWords } from "./utils/getTSCodeWords.js";
 
-export const TS_CODE_INPUT = `import { useCallback } from "react";
+export const TS_CODE_INPUT2 = `import { useCallback } from "react";
 import { useLatest } from "./useLatest";
 
 const a = 'qwerty';
 const b = 42;
 interface Foo {
+  bar: string;
+}
+const c = null;
+const d = /\d+/
+
+/**
+ * Foo bar  
+ * @type number
+ * 
+*/ 
+export function useEvent<T extends Function>(fn: T) {
+  // foo bar
+  const latestFn = useLatest(fn);
+
+  const eventCb = useCallback((...args: any[]) => {
+    return latestFn.current(...args);
+  }, []) as unknown as T;
+
+  return eventCb;
+}
+`;
+
+export const TS_CODE_INPUT = `interface Foo {
   bar: string;
 }
 const c = null;
