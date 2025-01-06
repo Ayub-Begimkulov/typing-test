@@ -6,7 +6,7 @@ import { useLatest } from "./useLatest";
 const a = 'qwerty';
 const b = 42;
 interface Foo {
- bar: string;
+  bar: string;
 }
 const c = null;
 const d = /\d+/
@@ -35,8 +35,8 @@ function getWordsFromText(text: string) {
   const result = [];
   let start = 0;
 
-  for (let i = 0, l = text.length; i < l; i++) {
-    if (text[i] !== " " && text[i] !== "\n") {
+  for (let i = 0, l = text.length; i < l + 1; i++) {
+    if (text[i] !== " " && text[i] !== "\n" && text[i] !== undefined) {
       continue;
     }
 
