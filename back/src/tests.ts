@@ -1,6 +1,6 @@
 import { getTSCodeWords } from "./utils/getTSCodeWords.js";
 
-export const TS_CODE_INPUT2 = `import { useCallback } from "react";
+export const TS_CODE_INPUT = `import { useCallback } from "react";
 import { useLatest } from "./useLatest";
 
 const a = 'qwerty';
@@ -28,7 +28,7 @@ export function useEvent<T extends Function>(fn: T) {
 }
 `;
 
-export const TS_CODE_INPUT = `interface Foo {
+export const TS_CODE_INPUT2 = `interface Foo {
   bar: string;
 }
 const c = null;

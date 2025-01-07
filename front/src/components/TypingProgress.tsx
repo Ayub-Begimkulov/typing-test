@@ -57,17 +57,19 @@ export const TypingProgress = memo(function TypingProgress({
                 : undefined;
 
             return (
-              <span
-                ref={separatorRef}
-                key={index}
-                style={{
-                  backgroundColor: separatorColor,
-                  color: "#a1a1a1",
-                  borderRadius: 5,
-                }}
-              >
-                {item === "\n" ? "↩\n" : " "}
-              </span>
+              <Fragment key={index}>
+                <span
+                  ref={separatorRef}
+                  style={{
+                    backgroundColor: separatorColor,
+                    color: "#a1a1a1",
+                    borderRadius: 5,
+                  }}
+                >
+                  {item === "\n" ? "↩" : " "}
+                </span>
+                {item === "\n" && <span style={{ width: "100%" }}></span>}
+              </Fragment>
             );
           })}
         </Fragment>
@@ -103,5 +105,16 @@ export const TypingProgress = memo(function TypingProgress({
     return result;
   }, [text, textTyped, currentLetterRef]);
 
-  return <pre style={{ fontSize: "25px", padding: "0 24px" }}>{letters}</pre>;
+  return (
+    <pre
+      style={{
+        fontSize: "25px",
+        padding: "0 24px",
+        display: "flex",
+        flexWrap: "wrap",
+      }}
+    >
+      {letters}
+    </pre>
+  );
 });
