@@ -5,6 +5,7 @@ import { isNumber } from "../utils";
 import { TypingProgress } from "./TypingProgress";
 import { Statistics } from "./Statistics";
 import { WordConfig } from "../hooks/queries/useTestQuery";
+import { Caret } from "./Caret";
 
 interface TypingTestProps {
   timeDuration: number;
@@ -195,6 +196,7 @@ export function TypingTest({
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "column",
+        width: "100%",
       }}
     >
       <textarea
@@ -217,44 +219,5 @@ export function TypingTest({
       {/* TODO delete */}
       <pre>{typedText}</pre>
     </div>
-  );
-}
-
-interface CaretProps {
-  typedText: string;
-  targetElementRef: React.RefObject<HTMLElement>;
-}
-
-function Caret({ targetElementRef, typedText }: CaretProps) {
-  const [rect, setRect] = useState<DOMRectReadOnly | null>(null);
-
-  useLayoutEffect(() => {
-    const element = targetElementRef.current;
-
-    if (!element) {
-      return;
-    }
-
-    const sizes = element.getBoundingClientRect();
-    setRect(sizes);
-  }, [typedText]);
-
-  if (!rect) {
-    return null;
-  }
-
-  return (
-    <span
-      style={{
-        height: rect.height,
-        width: 2,
-        background: "yellow",
-        position: "absolute",
-        top: 0,
-        left: 0,
-        transform: `translate3d(${rect.left}px, ${rect.top}px, 0)`,
-        transition: "transform 100ms",
-      }}
-    ></span>
   );
 }

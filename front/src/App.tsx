@@ -42,7 +42,14 @@ export function App() {
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+      }}
+    >
       <header
         style={{
           display: "flex",
@@ -66,6 +73,7 @@ export function App() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          width: "100%",
         }}
       >
         {renderContent()}

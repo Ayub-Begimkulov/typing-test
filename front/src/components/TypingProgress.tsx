@@ -64,11 +64,12 @@ export const TypingProgress = memo(function TypingProgress({
                     backgroundColor: separatorColor,
                     color: "#a1a1a1",
                     borderRadius: 5,
+                    whiteSpace: "pre",
                   }}
                 >
                   {item === "\n" ? "↩" : " "}
                 </span>
-                {item === "\n" && <span style={{ width: "100%" }}></span>}
+                {item === "\n" && <br />}
               </Fragment>
             );
           })}
@@ -106,15 +107,16 @@ export const TypingProgress = memo(function TypingProgress({
   }, [text, textTyped, currentLetterRef]);
 
   return (
-    <pre
+    <div
       style={{
         fontSize: "25px",
+        fontFamily: "monospace",
         padding: "0 24px",
-        display: "flex",
-        flexWrap: "wrap",
+        whiteSpace: "normal",
+        maxWidth: "100%",
       }}
     >
       {letters}
-    </pre>
+    </div>
   );
 });
