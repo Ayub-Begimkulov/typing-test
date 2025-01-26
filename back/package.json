@@ -7,10 +7,12 @@
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@typescript-eslint/typescript-estree": "^8.18.0",
-    "hono": "^4.6.10"
+    "hono": "^4.6.10",
+    "yauzl": "^3.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
+    "@types/yauzl": "^2.10.3",
     "tsx": "^4.7.1"
   }
 }

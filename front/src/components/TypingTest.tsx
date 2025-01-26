@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useEvent } from "../hooks/useEvent";
 import { useLatest } from "../hooks/useLatest";
 import { isNumber } from "../utils";
