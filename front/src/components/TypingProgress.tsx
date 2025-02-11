@@ -64,7 +64,7 @@ export const TypingProgress = memo(function TypingProgress({
                     backgroundColor: separatorColor,
                     color: "#a1a1a1",
                     borderRadius: 5,
-                    whiteSpace: "pre",
+                    whiteSpace: "pre-wrap",
                   }}
                 >
                   {item === "\n" ? "↩" : " "}

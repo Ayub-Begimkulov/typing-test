@@ -215,9 +215,6 @@ export function TypingTest({
         currentLetterRef={currentLetterRef}
       />
       <Caret targetElementRef={currentLetterRef} typedText={typedText} />
-
-      {/* TODO delete */}
-      <pre>{typedText}</pre>
     </div>
   );
 }

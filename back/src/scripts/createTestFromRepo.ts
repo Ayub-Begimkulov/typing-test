@@ -1,15 +1,19 @@
 // https://api.github.com/repos/{owner}/{repo}/zipball?ref=main
+// https://api.github.com/repos/Ayub-Begimkulov/retransition/contents/README.md
 import fsPromises from "fs/promises";
 import fs from "fs";
 import stream from "stream";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import yazul, { Entry, ZipFile } from "yauzl";
 import { getTSCodeWords } from "../utils/getTSCodeWords.js";
+import { memoryUsage } from "../utils/memoryUsage.js";
+import { ZipFileReader, type FileInfo } from "../utils/zipFileReader.js";
 
-const tempDir = path.resolve(fileURLToPath(import.meta.url), "../temp");
+const scriptDirectoryPath = path.resolve(fileURLToPath(import.meta.url), "..");
+const tempDir = path.resolve(scriptDirectoryPath, "./temp");
 const zipFileName = path.resolve(tempDir, "repo.zip");
+const testsDir = path.resolve(scriptDirectoryPath, "../tests");
 
 interface CreateTestFromRepoOptions {
   owner: string;
@@ -35,11 +39,7 @@ async function createTestFromRepo({
     throw new Error(await response.text());
   }
 
-  try {
-    await fsPromises.access(tempDir);
-  } catch (error) {
-    await fsPromises.mkdir(tempDir, { recursive: true });
-  }
+  await ensureDirectory(tempDir);
 
   await fsPromises.rm(zipFileName).catch((error) => {});
 
@@ -50,75 +50,66 @@ async function createTestFromRepo({
   );
 }
 
-class ZipFilesReader {
-  private zipFilePromise: Promise<ZipFile>;
-
-  constructor(filePath: string) {
-    this.zipFilePromise = new Promise((res, rej) => {
-      yazul.open(filePath, { lazyEntries: true }, (error, zipFile) => {
-        if (error) {
-          rej(error);
-        } else {
-          res(zipFile);
-        }
-      });
-    });
-  }
-
-  async getNextFile() {
-    const zipFile = await this.zipFilePromise;
-
-    // zipFile.on('entry', content => )
+async function ensureDirectory(path: string) {
+  try {
+    await fsPromises.access(path);
+  } catch (error) {
+    await fsPromises.mkdir(path, { recursive: true });
   }
 }
 
-function createTestFromZip() {
-  let totalLength = 0;
-  yazul.open(zipFileName, { lazyEntries: true }, (error, zipFile) => {
-    if (error) {
-      throw error;
+const fileNameRegex = /\.(ts|tsx|js|jsx)$/;
+
+function createTestContent(file: FileInfo) {
+  if (/\.(ts|tsx)$/.test(file.name)) {
+    return {
+      type: "typescript",
+      text: file.content,
+      words: getTSCodeWords(file.content),
+    };
+  }
+  if (/\.(js|jsx)$/.test(file.name)) {
+    return {
+      type: "javascript",
+      text: file.content,
+      words: getTSCodeWords(file.content),
+    };
+  }
+
+  return;
+}
+
+async function createTestFromZip() {
+  const zipFileReader = new ZipFileReader(zipFileName, (fileName) =>
+    fileNameRegex.test(fileName)
+  );
+
+  while (true) {
+    const file = await zipFileReader.getNextFile();
+
+    if (!file) {
+      break;
     }
 
-    zipFile.on("entry", (file: Entry) => {
-      if (/\.(ts|tsx|js|jsx)$/.test(file.fileName)) {
-        zipFile.openReadStream(file, (error, fileContentStream) => {
-          if (error) {
-            throw error;
-          }
+    const testContent = createTestContent(file);
 
-          streamToString(fileContentStream).then((content) => {
-            console.log("====================", file.fileName);
+    if (!testContent) {
+      continue;
+    }
 
-            const words = getTSCodeWords(content).map((item) => ({
-              ...item,
-              range: [item.range[0] + totalLength, item.range[1] + totalLength],
-            }));
-            totalLength += content.length;
+    const testTypeDirectory = path.resolve(testsDir, testContent.type);
+    await ensureDirectory(testTypeDirectory);
 
-            console.log(content);
-            console.log("====================");
-            zipFile.readEntry();
-          });
-        });
-      } else {
-        zipFile.readEntry();
-      }
-    });
-    zipFile.readEntry();
-  });
+    const resultFileName = file.name.replaceAll("/", "--");
+    await fsPromises.writeFile(
+      path.resolve(testTypeDirectory, resultFileName + ".json"),
+      JSON.stringify(testContent)
+    );
+  }
 }
 
+memoryUsage();
 createTestFromZip();
-
-function streamToString(stream: stream.Readable) {
-  return new Promise<string>((resolve, reject) => {
-    let data = "";
-    stream.on("data", (chunk) => {
-      data += chunk.toString();
-    });
-    stream.on("end", () => resolve(data));
-    stream.on("error", (err) => reject(err));
-  });
-}
+memoryUsage();
 
 // createTestFromRepo({ owner: "Ayub-Begimkulov", repoName: "retransition" });
