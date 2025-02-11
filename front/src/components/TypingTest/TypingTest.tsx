@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useEvent } from "../hooks/useEvent";
-import { useLatest } from "../hooks/useLatest";
-import { isNumber } from "../utils";
-import { TypingProgress } from "./TypingProgress";
-import { Statistics } from "./Statistics";
-import { WordConfig } from "../hooks/queries/useTestQuery";
-import { Caret } from "./Caret";
+import { useEvent } from "../../hooks/useEvent";
+import { useLatest } from "../../hooks/useLatest";
+import { isNumber } from "../../utils";
+import { TypingProgress } from "../TypingProgress";
+import { Statistics } from "../Statistics";
+import { WordConfig } from "../../hooks/queries/useTestQuery";
+import { Caret } from "../Caret";
 
 interface TypingTestProps {
   timeDuration: number;

@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { TypingTest } from "./components/TypingTest";
+import { TypingTest } from "./components/TypingTest/TypingTest";
 import { Settings } from "./types/settings";
 import { SettingsModal } from "./components/SettingsModal";
 import { useTestQuery } from "./hooks/queries/useTestQuery";
+import { useLocalStorage } from "./hooks/useLocalStorage";
 
 const DEFAULT_TYPE = "typescript";
 
 export function App() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [settings, setSettings] = useState<Settings>({
+  const [settings, setSettings] = useLocalStorage<Settings>("settings", {
     type: DEFAULT_TYPE,
     duration: 20,
   });

@@ -11,7 +11,8 @@ export function request<T = unknown>(
       return res
         .json()
         .then((data) => Promise.reject(data))
-        .catch(() => res.text());
+        .catch(() => res.text())
+        .then((text) => Promise.reject(text));
     }
 
     return res.json();

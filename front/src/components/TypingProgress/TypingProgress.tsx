@@ -1,4 +1,42 @@
 import { Fragment, memo, useMemo } from "react";
+import styles from "./TypingProgress.module.scss";
+import clsx from "clsx";
+
+const LINES_TO_RENDER = 16;
+
+function getStartOffset(
+  text: string,
+  textTyped: string,
+  totalLines: number,
+  linesToRender: number
+) {
+  if (totalLines <= linesToRender) {
+    return 0;
+  }
+
+  let linesTyped = 0;
+  let lastLine = 0;
+  let prevLine = 0;
+
+  for (let i = 0, l = text.length; i < l; i++) {
+    if (i >= textTyped.length) {
+      break;
+    }
+
+    if (text[i] === "\n") {
+      linesTyped++;
+      prevLine = lastLine;
+      lastLine = i + 1;
+    }
+
+    // +1 since we keep one line at the top
+    if (totalLines - linesTyped + 1 === linesToRender) {
+      break;
+    }
+  }
+
+  return prevLine;
+}
 
 interface TypingProgressProps {
   text: string;
@@ -11,6 +49,18 @@ export const TypingProgress = memo(function TypingProgress({
   textTyped,
   currentLetterRef,
 }: TypingProgressProps) {
+  const totalLines = useMemo(() => {
+    let totalLines = text.length > 0 ? 1 : 0;
+
+    for (let i = 0, l = text.length; i < l; i++) {
+      if (text[i] === "\n" && i !== text.length - 1) {
+        totalLines++;
+      }
+    }
+
+    return totalLines;
+  }, [text]);
+
   const letters = useMemo(() => {
     const result: JSX.Element[] = [];
 
@@ -24,18 +74,15 @@ export const TypingProgress = memo(function TypingProgress({
               const ref =
                 itemIndex === textTyped.length ? currentLetterRef : undefined;
 
-              const color =
-                typedLetter === item
-                  ? "white"
-                  : !typedLetter
-                  ? "#a1a1a1"
-                  : "red";
-
               return (
                 <span
                   ref={ref}
                   key={index}
-                  style={{ color, position: "relative" }}
+                  className={clsx(styles.typingProgressLetter, {
+                    [styles.typingProgressLetter_correct]: typedLetter === item,
+                    [styles.typingProgressLetter_error]:
+                      typedLetter && typedLetter !== item,
+                  })}
                 >
                   {item}
                 </span>
@@ -46,11 +93,9 @@ export const TypingProgress = memo(function TypingProgress({
           {separator.split("").map((item, index) => {
             const separatorIndex = baseIndex + word.length + index;
 
-            const separatorColor =
+            const isError =
               textTyped.length > separatorIndex &&
-              textTyped[separatorIndex] !== item
-                ? "#b73434"
-                : undefined;
+              textTyped[separatorIndex] !== item;
             const separatorRef =
               separatorIndex === textTyped.length
                 ? currentLetterRef
@@ -60,12 +105,10 @@ export const TypingProgress = memo(function TypingProgress({
               <Fragment key={index}>
                 <span
                   ref={separatorRef}
-                  style={{
-                    backgroundColor: separatorColor,
-                    color: "#a1a1a1",
-                    borderRadius: 5,
-                    whiteSpace: "pre-wrap",
-                  }}
+                  className={clsx(
+                    styles.typingProgressSeparator,
+                    isError && styles.typingProgressSeparator_error
+                  )}
                 >
                   {item === "\n" ? "↩" : " "}
                 </span>
@@ -77,8 +120,10 @@ export const TypingProgress = memo(function TypingProgress({
       );
     };
 
-    let wordStart = 0;
-    let i = 0;
+    let i = getStartOffset(text, textTyped, totalLines, LINES_TO_RENDER);
+    let wordStart = i;
+    let linesRendered = 0;
+
     while (i < text.length + 1) {
       if (text[i] !== " " && text[i] !== "\n" && text[i] !== undefined) {
         i++;
@@ -89,6 +134,14 @@ export const TypingProgress = memo(function TypingProgress({
 
       let newWordStart = text.length;
       for (let j = i; j < text.length; j++) {
+        if (text[j] === "\n") {
+          linesRendered++;
+          if (linesRendered >= LINES_TO_RENDER) {
+            newWordStart = j;
+            break;
+          }
+        }
+
         if (text[j] !== " " && text[j] !== "\n") {
           newWordStart = j;
           break;
@@ -99,24 +152,16 @@ export const TypingProgress = memo(function TypingProgress({
 
       addWord(word, separator, wordStart);
 
+      if (linesRendered >= LINES_TO_RENDER) {
+        break;
+      }
+
       wordStart = newWordStart;
       i = newWordStart + 1;
     }
 
     return result;
-  }, [text, textTyped, currentLetterRef]);
+  }, [text, textTyped, totalLines, currentLetterRef]);
 
-  return (
-    <div
-      style={{
-        fontSize: "25px",
-        fontFamily: "monospace",
-        padding: "0 24px",
-        whiteSpace: "normal",
-        maxWidth: "100%",
-      }}
-    >
-      {letters}
-    </div>
-  );
+  return <div className={styles.typingProgress}>{letters}</div>;
 });

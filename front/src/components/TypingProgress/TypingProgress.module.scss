@@ -1,0 +1,33 @@
+$default-color: #a1a1a1;
+$error-color: red;
+$correct-color: white;
+
+.typingProgress {
+  font-size: 25px;
+  font-family: monospace;
+  padding: 0 24px;
+  max-width: 1200px;
+
+  .typingProgressLetter {
+    color: $default-color;
+
+    &_correct {
+      color: $correct-color;
+    }
+
+    &_error {
+      color: $error-color;
+    }
+  }
+
+  .typingProgressSeparator {
+    white-space: pre-wrap;
+    border-radius: 5px;
+    color: $default-color;
+
+    &_error {
+      background-color: $error-color;
+      opacity: 0.8;
+    }
+  }
+}

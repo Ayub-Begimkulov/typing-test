@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Settings } from "../types/settings";
-import { Modal } from "./Modal";
-import { includes } from "../utils/includes";
-import { useTestTypesQuery } from "../hooks/queries/useTestTypesQuery";
+import { Settings } from "../../types/settings";
+import { Modal } from "../Modal/Modal";
+import { includes } from "../../utils/includes";
+import { useTestTypesQuery } from "../../hooks/queries/useTestTypesQuery";
 
 const MIN_DURATION = 10;
 
