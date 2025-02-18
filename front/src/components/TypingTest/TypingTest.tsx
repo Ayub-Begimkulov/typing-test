@@ -7,16 +7,105 @@ import { Statistics } from "../Statistics";
 import { WordConfig } from "../../hooks/queries/useTestQuery";
 import { Caret } from "../Caret";
 
+class TypingTimer {
+  private intervalId: number | null = null;
+  private timePassed: number = 0;
+  private prevTime: number | null = null;
+
+  constructor(
+    private config: {
+      duration: number;
+      onEnd: (timePassed: number) => void;
+      onTimeUpdate: (timePassed: number) => void;
+    }
+  ) {}
+
+  start() {
+    if (isNumber(this.intervalId)) {
+      return;
+    }
+
+    this.prevTime = performance.now();
+    this.intervalId = setInterval(() => {
+      this.checkForTime();
+    }, 1_000);
+  }
+
+  stop() {
+    if (!isNumber(this.intervalId)) {
+      return;
+    }
+
+    this.updateTimePassed();
+
+    clearInterval(this.intervalId);
+    this.intervalId = null;
+  }
+
+  checkForTime() {
+    if (!isNumber(this.intervalId)) {
+      return;
+    }
+
+    this.updateTimePassed();
+
+    if (this.timePassed >= this.config.duration) {
+      this.finishTimer();
+    } else {
+      this.config.onTimeUpdate(this.timePassed);
+    }
+  }
+
+  // public method since we can finish test
+  // before the timer runs out. so we need the ability to
+  // stop at any point
+  finish() {
+    if (!isNumber(this.intervalId)) {
+      return;
+    }
+
+    this.updateTimePassed();
+    this.finishTimer();
+  }
+
+  private finishTimer() {
+    if (!isNumber(this.intervalId)) {
+      return;
+    }
+
+    const { timePassed } = this;
+
+    clearInterval(this.intervalId);
+    this.intervalId = null;
+    this.prevTime = null;
+    this.timePassed = 0;
+
+    this.config.onEnd(timePassed);
+  }
+
+  private updateTimePassed() {
+    if (!isNumber(this.prevTime)) {
+      return;
+    }
+
+    const now = performance.now();
+    this.timePassed = this.timePassed + now - this.prevTime;
+    this.prevTime = now;
+  }
+}
+
 interface TypingTestProps {
   timeDuration: number;
   inputText: string;
   wordsConfig: WordConfig[];
+  width: number;
 }
 
 export function TypingTest({
   inputText,
   timeDuration,
   wordsConfig,
+  width,
 }: TypingTestProps) {
   const [status, setStatus] = useState<"stopped" | "started" | "finished">(
     "stopped"
@@ -32,7 +121,23 @@ export function TypingTest({
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const currentLetterRef = useRef<HTMLSpanElement>(null);
   const latestStatus = useLatest(status);
-  const intervalId = useRef<number | null>(null);
+
+  const handleTestEnd = useEvent((timePassed: number) => {
+    setStatus("finished");
+    setTimePassed(timePassed);
+  });
+  const handleTimeUpdate = useEvent((timePassed: number) => {
+    setTimePassed(timePassed);
+  });
+
+  const typingTimer = useMemo(() => {
+    const durationMs = timeDuration * 1_000;
+    return new TypingTimer({
+      duration: durationMs,
+      onTimeUpdate: handleTimeUpdate,
+      onEnd: handleTestEnd,
+    });
+  }, [timeDuration, handleTimeUpdate, handleTestEnd]);
 
   const startHandler = useEvent(() => {
     const textArea = textAreaRef.current;
@@ -49,29 +154,12 @@ export function TypingTest({
 
     textArea.focus();
 
-    const startTime = performance.now();
-    const timeDurationMs = timeDuration * 1_000;
-
-    intervalId.current = setInterval(() => {
-      const currentTime = performance.now();
-
-      const newTimePassed = timePassed + currentTime - startTime;
-
-      setTimePassed(newTimePassed);
-
-      if (newTimePassed > timeDurationMs) {
-        stopHandler(true);
-      }
-    }, 1_000);
+    typingTimer.start();
   });
 
-  const stopHandler = useEvent((ended: boolean = false) => {
-    setStatus(ended ? "finished" : "stopped");
-
-    if (isNumber(intervalId.current)) {
-      clearInterval(intervalId.current);
-      intervalId.current = null;
-    }
+  const stopHandler = useEvent(() => {
+    setStatus("stopped");
+    typingTimer.stop();
   });
 
   const restart = () => {
@@ -109,28 +197,57 @@ export function TypingTest({
 
   const handleTypedTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-
     setTypedText(newValue);
 
-    if (newValue.length < typedText.length) {
-      return;
+    // only calculate statistics for newly typed chars
+    if (newValue.length > typedText.length) {
+      const newCharIndex = newValue.length - 1;
+      const newChar = newValue[newCharIndex];
+
+      if (newChar === inputText[newCharIndex]) {
+        setStatistics((stats) => ({
+          ...stats,
+          correct: stats.correct + 1,
+          typed: stats.typed + 1,
+        }));
+      } else {
+        setStatistics((stats) => ({
+          ...stats,
+          incorrect: stats.incorrect + 1,
+          typed: stats.typed + 1,
+        }));
+      }
     }
 
-    const newCharIndex = newValue.length - 1;
-    const newChar = newValue[newCharIndex];
+    if (newValue.length === inputText.length) {
+      // last word has error
+      let lastWordIndex;
+      let prev = inputText[inputText.length - 1];
+      for (let i = inputText.length - 2; i >= 0; i--) {
+        const current = inputText[i];
+        if (
+          prev !== "\n" &&
+          prev !== " " &&
+          (current === " " || current === "\n")
+        ) {
+          lastWordIndex = i + 1;
+          break;
+        }
+        prev = current;
+      }
+      const lastWord = inputText.slice(lastWordIndex, inputText.length);
 
-    if (newChar === inputText[newCharIndex]) {
-      setStatistics((stats) => ({
-        ...stats,
-        correct: stats.correct + 1,
-        typed: stats.typed + 1,
-      }));
+      if (lastWord === newValue.slice(lastWordIndex, inputText.length)) {
+        typingTimer.finish();
+      }
+    } else if (newValue.length > inputText.length) {
+      // if there is an error in last word but person continues typing
+      // TODO check for space here???
+      typingTimer.finish();
     } else {
-      setStatistics((stats) => ({
-        ...stats,
-        incorrect: stats.incorrect + 1,
-        typed: stats.typed + 1,
-      }));
+      // interval might be called after the event, but if the
+      // time passed - we shouldn't wait to stop
+      typingTimer.checkForTime();
     }
   };
 
@@ -176,8 +293,8 @@ export function TypingTest({
       previousRangeEnd = item.range[1];
     }
 
-    return (correctWords * 60) / timeDuration;
-  }, [status, typedText, inputText]);
+    return (correctWords * 60) / (timePassed / 1_000);
+  }, [status, typedText, inputText, timePassed]);
 
   if (status === "finished") {
     return (
@@ -213,6 +330,7 @@ export function TypingTest({
         text={inputText}
         textTyped={typedText}
         currentLetterRef={currentLetterRef}
+        width={width}
       />
       <Caret targetElementRef={currentLetterRef} typedText={typedText} />
     </div>

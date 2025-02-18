@@ -42,12 +42,14 @@ interface TypingProgressProps {
   text: string;
   textTyped: string;
   currentLetterRef: React.RefObject<HTMLSpanElement>;
+  width: number;
 }
 
 export const TypingProgress = memo(function TypingProgress({
   text,
   textTyped,
   currentLetterRef,
+  width,
 }: TypingProgressProps) {
   const totalLines = useMemo(() => {
     let totalLines = text.length > 0 ? 1 : 0;
@@ -163,5 +165,9 @@ export const TypingProgress = memo(function TypingProgress({
     return result;
   }, [text, textTyped, totalLines, currentLetterRef]);
 
-  return <div className={styles.typingProgress}>{letters}</div>;
+  return (
+    <div className={styles.typingProgress} style={{ width }}>
+      {letters}
+    </div>
+  );
 });

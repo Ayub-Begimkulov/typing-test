@@ -5,6 +5,7 @@ import { includes } from "../../utils/includes";
 import { useTestTypesQuery } from "../../hooks/queries/useTestTypesQuery";
 
 const MIN_DURATION = 10;
+const MIN_WIDTH = 300;
 
 interface SettingsModalProps {
   open: boolean;
@@ -31,7 +32,7 @@ export function SettingsModal({
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseInt(e.target.value, 10);
 
-    if (Number.isNaN(parsedValue) || parsedValue < 10) {
+    if (Number.isNaN(parsedValue) || parsedValue < MIN_DURATION) {
       setErrors({
         ...errors,
         duration: "duration must be at least " + MIN_DURATION,
@@ -60,6 +61,23 @@ export function SettingsModal({
     setNewSettings({ ...settings, type: value });
   };
 
+  const handleWidthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    const parsedValue = parseInt(value, 10);
+
+    if (Number.isNaN(parsedValue) || parsedValue < MIN_WIDTH) {
+      setErrors({ ...errors, width: `Width must be at least ${MIN_WIDTH}` });
+    } else {
+      setErrors({ ...errors, width: undefined });
+    }
+
+    setNewSettings({
+      ...settings,
+      width: Number.isNaN(parsedValue) ? undefined : parsedValue,
+    });
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -71,9 +89,14 @@ export function SettingsModal({
       return;
     }
 
+    if (!newSettings.width || newSettings.width < MIN_WIDTH) {
+      return;
+    }
+
     onSettingsChange({
       type: newSettings.type,
       duration: newSettings.duration,
+      width: newSettings.width,
     });
     onClose();
   };
@@ -106,7 +129,15 @@ export function SettingsModal({
           ))}
         </select>
         <div style={{ color: "red" }}>{errors.type}</div>
-        <button>Submit</button>
+        <h3>Width</h3>
+        <input
+          value={newSettings.width ?? ""}
+          onChange={handleWidthChange}
+          onKeyDown={stopInputPropagation}
+          type="number"
+        />
+        <div style={{ color: "red" }}>{errors.width}</div>
+        <button style={{ marginTop: "12px" }}>Submit</button>
       </form>
     );
   };

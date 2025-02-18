@@ -61,18 +61,20 @@ async function ensureDirectory(path: string) {
 const fileNameRegex = /\.(ts|tsx|js|jsx)$/;
 
 function createTestContent(file: FileInfo) {
+  const trimmedContent = file.content.trim();
+
   if (/\.(ts|tsx)$/.test(file.name)) {
     return {
       type: "typescript",
-      text: file.content,
-      words: getTSCodeWords(file.content),
+      text: trimmedContent,
+      words: getTSCodeWords(trimmedContent),
     };
   }
   if (/\.(js|jsx)$/.test(file.name)) {
     return {
       type: "javascript",
-      text: file.content,
-      words: getTSCodeWords(file.content),
+      text: trimmedContent,
+      words: getTSCodeWords(trimmedContent),
     };
   }
 
