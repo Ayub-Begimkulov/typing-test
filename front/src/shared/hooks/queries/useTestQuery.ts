@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { request } from "../../utils/request";
+import { request } from "../../../shared/utils";
 
 export interface WordConfig {
   text: string;
@@ -15,7 +15,7 @@ export interface TypingTest {
 
 export function useTestQuery(type: string) {
   const { data: testData, ...rest } = useQuery({
-    queryKey: ["typing-test", type],
+    queryKey: ["typing-tests", type],
     queryFn: () => request<TypingTest>(`/typing-tests/${type}`),
   });
 

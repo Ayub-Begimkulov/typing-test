@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { isFunction } from "../utils";
+import { localStorageWrapper, PersistentStorage } from "../utils";
 import { useEvent } from "./useEvent";
-import { localStorageWrapper, PersistentStorage } from "../utils/storage";
 
 function createPersistentStateHooks(storage: PersistentStorage) {
   return function usePersistentState<Value>(

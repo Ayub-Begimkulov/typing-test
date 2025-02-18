@@ -3,11 +3,12 @@ import { useState, useLayoutEffect, useRef } from "react";
 
 interface CaretProps {
   typedText: string;
+  text: string;
   targetElementRef: React.RefObject<HTMLElement>;
 }
 
-export function Caret({ targetElementRef, typedText }: CaretProps) {
-  const [rect, setRect] = useState({ height: 0, top: 0, left: 0 });
+export function Caret({ targetElementRef, typedText, text }: CaretProps) {
+  const [rect, setRect] = useState({ height: 0, top: 0, left: 0, right: 0 });
   const caretRef = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
@@ -23,7 +24,9 @@ export function Caret({ targetElementRef, typedText }: CaretProps) {
     });
 
     return cleanup;
-  }, [typedText]);
+  }, [typedText, text]);
+
+  const isLastElement = typedText.length >= text.length;
 
   return (
     <span
@@ -35,7 +38,10 @@ export function Caret({ targetElementRef, typedText }: CaretProps) {
         position: "absolute",
         top: 0,
         left: 0,
-        transform: `translate3d(${rect.left}px, ${rect.top}px, 0)`,
+        // align element to the right of target if it's last letter
+        transform: `translate3d(${isLastElement ? rect.right : rect.left}px, ${
+          rect.top
+        }px, 0)`,
         transition: "transform 100ms",
       }}
     ></span>

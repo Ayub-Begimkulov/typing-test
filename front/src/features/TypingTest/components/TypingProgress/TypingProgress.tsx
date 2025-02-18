@@ -1,42 +1,10 @@
 import { Fragment, memo, useMemo } from "react";
 import styles from "./TypingProgress.module.scss";
 import clsx from "clsx";
+import { calculateTotalLines } from "../../utils";
+import { calculateVisibleTextOffset } from "../../utils/calculateVisibleTextOffset";
 
 const LINES_TO_RENDER = 16;
-
-function getStartOffset(
-  text: string,
-  textTyped: string,
-  totalLines: number,
-  linesToRender: number
-) {
-  if (totalLines <= linesToRender) {
-    return 0;
-  }
-
-  let linesTyped = 0;
-  let lastLine = 0;
-  let prevLine = 0;
-
-  for (let i = 0, l = text.length; i < l; i++) {
-    if (i >= textTyped.length) {
-      break;
-    }
-
-    if (text[i] === "\n") {
-      linesTyped++;
-      prevLine = lastLine;
-      lastLine = i + 1;
-    }
-
-    // +1 since we keep one line at the top
-    if (totalLines - linesTyped + 1 === linesToRender) {
-      break;
-    }
-  }
-
-  return prevLine;
-}
 
 interface TypingProgressProps {
   text: string;
@@ -52,19 +20,12 @@ export const TypingProgress = memo(function TypingProgress({
   width,
 }: TypingProgressProps) {
   const totalLines = useMemo(() => {
-    let totalLines = text.length > 0 ? 1 : 0;
-
-    for (let i = 0, l = text.length; i < l; i++) {
-      if (text[i] === "\n" && i !== text.length - 1) {
-        totalLines++;
-      }
-    }
-
-    return totalLines;
+    return calculateTotalLines(text);
   }, [text]);
 
   const letters = useMemo(() => {
     const result: JSX.Element[] = [];
+    const caretItemIndex = Math.min(textTyped.length, text.length - 1);
 
     const addWord = (word: string, separator: string, baseIndex: number) => {
       result.push(
@@ -74,7 +35,7 @@ export const TypingProgress = memo(function TypingProgress({
               const itemIndex = baseIndex + index;
               const typedLetter = textTyped[itemIndex];
               const ref =
-                itemIndex === textTyped.length ? currentLetterRef : undefined;
+                itemIndex === caretItemIndex ? currentLetterRef : undefined;
 
               return (
                 <span
@@ -99,9 +60,7 @@ export const TypingProgress = memo(function TypingProgress({
               textTyped.length > separatorIndex &&
               textTyped[separatorIndex] !== item;
             const separatorRef =
-              separatorIndex === textTyped.length
-                ? currentLetterRef
-                : undefined;
+              separatorIndex === caretItemIndex ? currentLetterRef : undefined;
 
             return (
               <Fragment key={index}>
@@ -122,7 +81,12 @@ export const TypingProgress = memo(function TypingProgress({
       );
     };
 
-    let i = getStartOffset(text, textTyped, totalLines, LINES_TO_RENDER);
+    let i = calculateVisibleTextOffset(
+      text,
+      textTyped,
+      totalLines,
+      LINES_TO_RENDER
+    );
     let wordStart = i;
     let linesRendered = 0;
 

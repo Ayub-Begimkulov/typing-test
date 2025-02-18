@@ -63,6 +63,10 @@ const fileNameRegex = /\.(ts|tsx|js|jsx)$/;
 function createTestContent(file: FileInfo) {
   const trimmedContent = file.content.trim();
 
+  if (trimmedContent.length === 0) {
+    return;
+  }
+
   if (/\.(ts|tsx)$/.test(file.name)) {
     return {
       type: "typescript",
