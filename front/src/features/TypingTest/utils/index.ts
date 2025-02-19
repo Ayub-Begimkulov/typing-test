@@ -1,3 +1,5 @@
+export { calculateLineRanges } from "./calculateLineRanges";
 export { calculateTestResults } from "./calculateTestResults";
-export { calculateTotalLines } from "./calculateTotalLines";
+export { calculateVisibleTextRange } from "./calculateVisibleTextRange";
 export { getLastWordRange } from "./getLastWordRange";
+export { isSpaceOrLineBreak } from "./isSpaceOrLineBreak";
