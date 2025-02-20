@@ -1,0 +1,12 @@
+@use "../../styles/varitable.scss" as variables;
+
+.separator {
+  white-space: pre-wrap;
+  border-radius: 5px;
+  color: variables.$default-color;
+
+  &_error {
+    background-color: variables.$error-color;
+    opacity: 0.8;
+  }
+}

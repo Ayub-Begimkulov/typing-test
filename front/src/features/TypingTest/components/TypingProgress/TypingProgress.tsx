@@ -1,25 +1,25 @@
-import { Fragment, memo, useMemo } from "react";
+import { memo, useMemo } from "react";
 import styles from "./TypingProgress.module.scss";
-import clsx from "clsx";
 import {
   calculateLineRanges,
   calculateVisibleTextRange,
-  isSpaceOrLineBreak,
+  iterateTextParts,
 } from "../../utils";
-import { isNumber } from "../../../../shared/utils";
+import { Word } from "../Word";
+import { Separator } from "../Separator";
 
 const LINES_TO_RENDER = 16;
 
 interface TypingProgressProps {
   text: string;
-  textTyped: string;
+  typedText: string;
   currentLetterRef: React.RefObject<HTMLSpanElement>;
   width: number;
 }
 
 export const TypingProgress = memo(function TypingProgress({
   text,
-  textTyped,
+  typedText,
   currentLetterRef,
   width,
 }: TypingProgressProps) {
@@ -29,113 +29,49 @@ export const TypingProgress = memo(function TypingProgress({
 
   const letters = useMemo(() => {
     const result: JSX.Element[] = [];
-    const caretItemIndex = Math.min(textTyped.length, text.length - 1);
 
-    const addWord = (word: string, separator: string, baseIndex: number) => {
-      result.push(
-        <Fragment key={baseIndex}>
-          <span>
-            {word.split("").map((item, index) => {
-              const itemIndex = baseIndex + index;
-              const typedLetter = textTyped[itemIndex];
-              const ref =
-                itemIndex === caretItemIndex ? currentLetterRef : undefined;
-
-              return (
-                <span
-                  ref={ref}
-                  key={index}
-                  className={clsx(styles.typingProgressLetter, {
-                    [styles.typingProgressLetter_correct]: typedLetter === item,
-                    [styles.typingProgressLetter_error]:
-                      typedLetter && typedLetter !== item,
-                  })}
-                >
-                  {item}
-                </span>
-              );
-            })}
-          </span>
-
-          {separator.split("").map((item, index) => {
-            const separatorIndex = baseIndex + word.length + index;
-
-            const isError =
-              textTyped.length > separatorIndex &&
-              textTyped[separatorIndex] !== item;
-            const separatorRef =
-              separatorIndex === caretItemIndex ? currentLetterRef : undefined;
-
-            return (
-              <Fragment key={index}>
-                <span
-                  ref={separatorRef}
-                  className={clsx(
-                    styles.typingProgressSeparator,
-                    isError && styles.typingProgressSeparator_error
-                  )}
-                >
-                  {item === "\n" ? "↩" : " "}
-                </span>
-                {item === "\n" && <br />}
-              </Fragment>
-            );
-          })}
-        </Fragment>
-      );
-    };
+    const caretItemIndex = Math.min(typedText.length, text.length - 1);
 
     const visibleRange = calculateVisibleTextRange(
       text,
-      textTyped,
+      typedText,
       lineRanges,
       LINES_TO_RENDER
     );
 
-    let i = visibleRange[0];
-    const end = visibleRange[1];
+    iterateTextParts(
+      text,
+      ({ type, part, range }) => {
+        const caret =
+          range[0] <= caretItemIndex && caretItemIndex <= range[1]
+            ? { index: caretItemIndex - range[0], ref: currentLetterRef }
+            : undefined;
 
-    let wordStart = i;
+        const typed =
+          range[0] < typedText.length
+            ? typedText.slice(range[0], range[1] + 1)
+            : undefined;
 
-    while (i <= end) {
-      // if the last index isn't whitespace, we must add
-      // the word ourself
-      if (!isSpaceOrLineBreak(text[i]) && i === end) {
-        addWord(text.slice(wordStart, i + 1), "", wordStart);
-        break;
-      }
-
-      if (!isSpaceOrLineBreak(text[i])) {
-        i++;
-        continue;
-      }
-
-      const word = text.slice(wordStart, i);
-
-      let newWordStart: number | null = null;
-      for (let j = i + 1; j <= end; j++) {
-        if (!isSpaceOrLineBreak(text[j])) {
-          newWordStart = j;
-          break;
+        if (type === "word") {
+          result.push(
+            <Word key={range[0]} word={part} typed={typed} caret={caret} />
+          );
+        } else {
+          result.push(
+            <Separator
+              key={range[0]}
+              separator={part}
+              typed={typed}
+              caret={caret}
+            />
+          );
         }
-      }
-
-      if (isNumber(newWordStart)) {
-        const separator = text.slice(i, newWordStart);
-        addWord(word, separator, wordStart);
-        wordStart = newWordStart;
-        i = newWordStart;
-      } else {
-        // we only enter this case if the text has
-        // whitespaces at the end.
-        const separator = text.slice(i, end + 1);
-        addWord(word, separator, wordStart);
-        break;
-      }
-    }
+      },
+      visibleRange
+    );
 
     return result;
-  }, [text, textTyped, lineRanges, currentLetterRef]);
+  }, [text, typedText, lineRanges, currentLetterRef]);
 
   return (
     <div className={styles.typingProgress} style={{ width }}>
@@ -143,72 +79,3 @@ export const TypingProgress = memo(function TypingProgress({
     </div>
   );
 });
-
-interface WordProps {
-  word: string;
-  baseIndex: number;
-  textTyped: string;
-}
-
-function Word({ word, baseIndex, textTyped }: WordProps) {
-  return (
-    <span>
-      {word.split("").map((item, index) => {
-        const itemIndex = baseIndex + index;
-        const typedLetter = textTyped[itemIndex];
-        const ref = itemIndex === caretItemIndex ? currentLetterRef : undefined;
-
-        return (
-          <span
-            ref={ref}
-            key={index}
-            className={clsx(styles.typingProgressLetter, {
-              [styles.typingProgressLetter_correct]: typedLetter === item,
-              [styles.typingProgressLetter_error]:
-                typedLetter && typedLetter !== item,
-            })}
-          >
-            {item}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
-interface SeparatorProps {
-  separator: string;
-  baseIndex: number;
-  textTyped: string;
-}
-
-function Separator({ separator, textTyped, baseIndex }: SeparatorProps) {
-  return (
-    <Fragment key={baseIndex}>
-      {separator.split("").map((item, index) => {
-        const separatorIndex = baseIndex + index;
-
-        const isError =
-          textTyped.length > separatorIndex &&
-          textTyped[separatorIndex] !== item;
-        const separatorRef =
-          separatorIndex === caretItemIndex ? currentLetterRef : undefined;
-
-        return (
-          <Fragment key={index}>
-            <span
-              ref={separatorRef}
-              className={clsx(
-                styles.typingProgressSeparator,
-                isError && styles.typingProgressSeparator_error
-              )}
-            >
-              {item === "\n" ? "↩" : " "}
-            </span>
-            {item === "\n" && <br />}
-          </Fragment>
-        );
-      })}
-    </Fragment>
-  );
-}

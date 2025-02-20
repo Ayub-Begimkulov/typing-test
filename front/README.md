@@ -3,7 +3,7 @@
 TODO:
 
 - refactoring...
-  - нейминги (typedText, text, textTyped, handle/on, )
+  - нейминги ( handle/on, )
 - посмотреть на шорткаты
   - cmd + a
   - начало печатания

@@ -1,19 +1,19 @@
 export function calculateVisibleTextRange(
   text: string,
-  textTyped: string,
+  typedText: string,
   lineRanges: [number, number][],
   linesToRender: number
-) {
+): [number, number] {
   if (lineRanges.length <= linesToRender) {
     return [0, text.length];
   }
 
   // make a type assertion here (i.e bang operator `!`)
-  // since `textTyped.length` can't be longer then `text`
+  // since `typedText.length` can't be longer then `text`
   // therefor we must always find correct line if our code works
   const currentTypingLineIndex = calculateCurrentLineIndex(
     lineRanges,
-    textTyped.length
+    typedText.length
   )!;
 
   // -1 since we add one line at the top

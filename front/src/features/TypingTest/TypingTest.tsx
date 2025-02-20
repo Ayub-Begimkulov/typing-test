@@ -9,15 +9,15 @@ import { calculateTestResults, getLastWordRange } from "./utils";
 import styles from "./TypingTest.module.scss";
 
 interface TypingTestProps {
-  timeDuration: number;
-  inputText: string;
+  duration: number;
+  text: string;
   wordsConfig: WordConfig[];
   width: number;
 }
 
 export function TypingTest({
-  inputText,
-  timeDuration,
+  text,
+  duration,
   wordsConfig,
   width,
 }: TypingTestProps) {
@@ -45,13 +45,13 @@ export function TypingTest({
   });
 
   const typingTimer = useMemo(() => {
-    const durationMs = timeDuration * 1_000;
+    const durationMs = duration * 1_000;
     return new TypingTimer({
       duration: durationMs,
       onTimeUpdate: handleTimeUpdate,
       onEnd: handleTestEnd,
     });
-  }, [timeDuration, handleTimeUpdate, handleTestEnd]);
+  }, [duration, handleTimeUpdate, handleTestEnd]);
 
   const startTest = useEvent(() => {
     const textArea = textAreaRef.current;
@@ -118,7 +118,7 @@ export function TypingTest({
       const newCharIndex = newValue.length - 1;
       const newChar = newValue[newCharIndex];
 
-      if (newChar === inputText[newCharIndex]) {
+      if (newChar === text[newCharIndex]) {
         setStatistics((stats) => ({
           ...stats,
           correct: stats.correct + 1,
@@ -133,18 +133,18 @@ export function TypingTest({
       }
     }
 
-    if (newValue.length === inputText.length) {
-      const lastWordRange = getLastWordRange(inputText);
-      const lastWordOriginal = inputText.slice(...lastWordRange);
+    if (newValue.length === text.length) {
+      const lastWordRange = getLastWordRange(text);
+      const lastWordOriginal = text.slice(...lastWordRange);
       const lastWordTyped = newValue.slice(...lastWordRange);
 
       // the length of the typed and original text is same
-      // and last word doesn't have mistakes - finish test
+      // and last word doesn't have typos - finish test
       if (lastWordTyped === lastWordOriginal) {
         typingTimer.finish();
       }
-    } else if (newValue.length > inputText.length) {
-      // the last word had a mistake, however the user
+    } else if (newValue.length > text.length) {
+      // the last word had a typo, however the user
       // continued typing, there for we finish test...
       typingTimer.finish();
     } else {
@@ -161,11 +161,11 @@ export function TypingTest({
 
     return calculateTestResults({
       wordsConfig,
-      text: inputText,
+      text,
       typedText,
       timePassed,
     });
-  }, [status, typedText, inputText, timePassed, wordsConfig]);
+  }, [status, typedText, text, timePassed, wordsConfig]);
 
   if (status === "finished") {
     return (
@@ -190,19 +190,19 @@ export function TypingTest({
         {status === "started" ? "Started" : "Start typing"}
       </div>
       <div className={styles.typingTestTime}>
-        Time: {Math.floor(timeDuration - timePassed / 1_000)}
+        Time: {Math.floor(duration - timePassed / 1_000)}
       </div>
 
       <TypingProgress
-        text={inputText}
-        textTyped={typedText}
+        text={text}
+        typedText={typedText}
         currentLetterRef={currentLetterRef}
         width={width}
       />
       <Caret
         targetElementRef={currentLetterRef}
         typedText={typedText}
-        text={inputText}
+        text={text}
       />
     </div>
   );
