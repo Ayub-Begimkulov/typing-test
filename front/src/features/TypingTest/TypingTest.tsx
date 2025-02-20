@@ -8,6 +8,8 @@ import { TypingTimer } from "./services/typingTimer";
 import { calculateTestResults, getLastWordRange } from "./utils";
 import styles from "./TypingTest.module.scss";
 
+const startTestKeys = ["Enter", "Backspace"];
+
 interface TypingTestProps {
   duration: number;
   text: string;
@@ -53,7 +55,7 @@ export function TypingTest({
     });
   }, [duration, handleTimeUpdate, handleTestEnd]);
 
-  const startTest = useEvent(() => {
+  const handleStartTest = useEvent(() => {
     const textArea = textAreaRef.current;
 
     if (!textArea) {
@@ -71,7 +73,7 @@ export function TypingTest({
     typingTimer.start();
   });
 
-  const stopTest = useEvent(() => {
+  const handleStopTest = useEvent(() => {
     setStatus("stopped");
     typingTimer.stop();
   });
@@ -95,11 +97,12 @@ export function TypingTest({
         return;
       }
 
-      if (key.length !== 1) {
+      // ignore keys that don't change text (f keys, shift, meta etc.)
+      if (!startTestKeys.includes(key) && key.length !== 1) {
         return;
       }
 
-      startTest();
+      handleStartTest();
     };
 
     window.addEventListener("keydown", handleGlobalKeydown);
@@ -107,7 +110,7 @@ export function TypingTest({
     return () => {
       window.removeEventListener("keydown", handleGlobalKeydown);
     };
-  }, [startTest]);
+  }, [handleStartTest]);
 
   const handleTypedTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -145,7 +148,7 @@ export function TypingTest({
       }
     } else if (newValue.length > text.length) {
       // the last word had a typo, however the user
-      // continued typing, there for we finish test...
+      // continued typing, therefor we finish test...
       typingTimer.finish();
     } else {
       // if the time already past, but interval wasn't
@@ -184,7 +187,7 @@ export function TypingTest({
         ref={textAreaRef}
         value={typedText}
         onChange={handleTypedTextChange}
-        onBlur={stopTest}
+        onBlur={handleStopTest}
       />
       <div className={styles.typingTestStatus}>
         {status === "started" ? "Started" : "Start typing"}
