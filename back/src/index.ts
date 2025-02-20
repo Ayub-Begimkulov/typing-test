@@ -1,8 +1,8 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { testTypes } from "./tests.js";
+import { testTypes } from "./types.js";
 import { cors } from "hono/cors";
-import english from "./tests/english/english-200.json" assert { type: "json" };
+import english from "./tests-data/english/english-200.json" assert { type: "json" };
 import { shuffle } from "./utils/shuffle.js";
 import { getWordsRange } from "./utils/getWordsRange.js";
 import { stream } from "hono/streaming";

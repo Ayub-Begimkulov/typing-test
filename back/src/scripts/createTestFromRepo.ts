@@ -3,17 +3,17 @@ import fs from "fs";
 import stream from "stream";
 import { finished } from "stream/promises";
 import path from "path";
-import { fileURLToPath } from "url";
 
 import { getTSCodeWords, type TSCodeWord } from "../utils/getTSCodeWords.js";
 import { ZipFileReader, type FileInfo } from "../utils/zipFileReader.js";
-import type { TestType } from "../tests.js";
+import type { TestType } from "../types.js";
 import { AST_TOKEN_TYPES } from "@typescript-eslint/typescript-estree";
+import { pathFromSrc } from "../utils/pathFromSrc.js";
 
-const scriptDirectoryPath = path.resolve(fileURLToPath(import.meta.url), "..");
-const tempDir = path.resolve(scriptDirectoryPath, "./temp");
+const scriptDirectory = pathFromSrc("./scripts");
+const tempDir = path.resolve(scriptDirectory, "./temp");
 const zipFileName = path.resolve(tempDir, "repo.zip");
-const testsDir = path.resolve(scriptDirectoryPath, "../tests");
+const testsDir = pathFromSrc("./tests-data");
 
 export interface CreateTestFromRepoOptions {
   owner: string;
