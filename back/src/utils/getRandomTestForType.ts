@@ -9,7 +9,7 @@ import { random } from "./random.js";
 const cache = new Map<string, string[]>();
 
 export async function getRandomTestForType(type: string) {
-  const testsDir = pathFromSrc("./tests/", type);
+  const testsDir = pathFromSrc("./tests-data/", type);
 
   let items = cache.get(type);
   if (!items) {
