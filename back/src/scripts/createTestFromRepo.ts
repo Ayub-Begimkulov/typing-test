@@ -1,27 +1,27 @@
-// https://api.github.com/repos/{owner}/{repo}/zipball?ref=main
-// https://api.github.com/repos/Ayub-Begimkulov/retransition/contents/README.md
 import fsPromises from "fs/promises";
 import fs from "fs";
 import stream from "stream";
+import { finished } from "stream/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { getTSCodeWords } from "../utils/getTSCodeWords.js";
-import { memoryUsage } from "../utils/memoryUsage.js";
+import { getTSCodeWords, type TSCodeWord } from "../utils/getTSCodeWords.js";
 import { ZipFileReader, type FileInfo } from "../utils/zipFileReader.js";
+import type { TestType } from "../tests.js";
+import { AST_TOKEN_TYPES } from "@typescript-eslint/typescript-estree";
 
 const scriptDirectoryPath = path.resolve(fileURLToPath(import.meta.url), "..");
 const tempDir = path.resolve(scriptDirectoryPath, "./temp");
 const zipFileName = path.resolve(tempDir, "repo.zip");
 const testsDir = path.resolve(scriptDirectoryPath, "../tests");
 
-interface CreateTestFromRepoOptions {
+export interface CreateTestFromRepoOptions {
   owner: string;
   repoName: string;
   ref?: string; // branch | hash
 }
 
-async function createTestFromRepo({
+export async function createTestFromRepo({
   owner,
   repoName,
   ref,
@@ -31,23 +31,46 @@ async function createTestFromRepo({
     params.append("ref", ref);
   }
 
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repoName}/zipball?${ref?.toString()}`
-  );
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repoName}/zipball?${params.toString()}`
+    );
 
-  if (!response.ok || !response.body) {
-    throw new Error(await response.text());
+    if (!response.ok || !response.body) {
+      throw new Error(
+        `Failed to fetch repo "${owner}/${repoName}".\nStatus: ${
+          response.status
+        }\Response:\n${await response.text()}`
+      );
+    }
+
+    await ensureDirectory(tempDir);
+    await deleteZipFile();
+
+    const writeFileStream = fs.createWriteStream(zipFileName);
+    const bodyStream = stream.Readable.fromWeb(response.body);
+
+    bodyStream.pipe(writeFileStream);
+
+    bodyStream.on("error", async (error) => {
+      console.error("Error happened downloading zip:", error);
+      await deleteZipFile();
+    });
+
+    writeFileStream.on("error", async (error) => {
+      console.error("Error happened writing zip:", error);
+      bodyStream.destroy();
+      await deleteZipFile();
+    });
+
+    await finished(writeFileStream);
+
+    await createTestFromZip();
+  } catch (error) {
+    console.error("Error happened trying to download zip:", error);
+  } finally {
+    await deleteZipFile();
   }
-
-  await ensureDirectory(tempDir);
-
-  await fsPromises.rm(zipFileName).catch((error) => {});
-
-  const fileStream = fs.createWriteStream(zipFileName);
-
-  const readableStreamPipe = stream.Readable.fromWeb(response.body).pipe(
-    fileStream
-  );
 }
 
 async function ensureDirectory(path: string) {
@@ -58,32 +81,11 @@ async function ensureDirectory(path: string) {
   }
 }
 
-const fileNameRegex = /\.(ts|tsx|js|jsx)$/;
-
-function createTestContent(file: FileInfo) {
-  const trimmedContent = file.content.trim();
-
-  if (trimmedContent.length === 0) {
-    return;
-  }
-
-  if (/\.(ts|tsx)$/.test(file.name)) {
-    return {
-      type: "typescript",
-      text: trimmedContent,
-      words: getTSCodeWords(trimmedContent),
-    };
-  }
-  if (/\.(js|jsx)$/.test(file.name)) {
-    return {
-      type: "javascript",
-      text: trimmedContent,
-      words: getTSCodeWords(trimmedContent),
-    };
-  }
-
-  return;
+function deleteZipFile() {
+  return fsPromises.rm(zipFileName, { force: true });
 }
+
+const fileNameRegex = /\.(ts|tsx|js|jsx)$/;
 
 async function createTestFromZip() {
   const zipFileReader = new ZipFileReader(zipFileName, (fileName) =>
@@ -114,8 +116,51 @@ async function createTestFromZip() {
   }
 }
 
-memoryUsage();
-createTestFromZip();
-memoryUsage();
+interface TestContent {
+  type: TestType;
+  text: string;
+  words: TSCodeWord[];
+}
 
-// createTestFromRepo({ owner: "Ayub-Begimkulov", repoName: "retransition" });
+function createTestContent(file: FileInfo): TestContent | undefined {
+  const trimmedContent = file.content.trim();
+
+  if (trimmedContent.length === 0) {
+    return;
+  }
+
+  if (/\.ts$/.test(file.name)) {
+    return {
+      type: "typescript",
+      text: trimmedContent,
+      // turn of jsx so that generics work correctly
+      words: getTSCodeWords(trimmedContent, { jsx: false }),
+    };
+  } else if (/\.tsx$/.test(file.name)) {
+    const words = getTSCodeWords(trimmedContent);
+    const hasJSX = words.some(
+      (word) =>
+        word.type === AST_TOKEN_TYPES.JSXIdentifier ||
+        word.type === AST_TOKEN_TYPES.JSXText
+    );
+    return {
+      type: hasJSX ? "typescript-jsx" : "typescript",
+      text: trimmedContent,
+      words,
+    };
+  } else if (/\.(js|jsx)$/.test(file.name)) {
+    const words = getTSCodeWords(trimmedContent);
+    const hasJSX = words.some(
+      (word) =>
+        word.type === AST_TOKEN_TYPES.JSXIdentifier ||
+        word.type === AST_TOKEN_TYPES.JSXText
+    );
+    return {
+      type: hasJSX ? "javascript-jsx" : "javascript",
+      text: trimmedContent,
+      words,
+    };
+  }
+
+  return;
+}

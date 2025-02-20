@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Settings } from "../../types/settings";
 import { Modal } from "../../shared/components/Modal";
-import { includes } from "../../shared/utils";
 import { useTestTypesQuery } from "../../shared/hooks/queries/useTestTypesQuery";
 
 const MIN_DURATION = 10;
@@ -51,7 +50,7 @@ export function SettingsModal({
   const handleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
 
-    if (!includes(types, value)) {
+    if (!types.some((item) => item.type === value)) {
       setErrors({ ...errors, type: "invalid type" });
       return;
     } else {
@@ -85,7 +84,10 @@ export function SettingsModal({
       return;
     }
 
-    if (!includes(types, newSettings.type)) {
+    if (
+      !newSettings.type ||
+      !types.some((item) => item.type === newSettings.type)
+    ) {
       return;
     }
 
@@ -122,9 +124,9 @@ export function SettingsModal({
         <div style={{ color: "red" }}>{errors.duration}</div>
         <h3>Language</h3>
         <select value={newSettings.type} onChange={handleTypeChange}>
-          {types.map((type) => (
-            <option key={type} value={type}>
-              {type}
+          {types.map((item) => (
+            <option key={item.type} value={item.type}>
+              {item.name}
             </option>
           ))}
         </select>

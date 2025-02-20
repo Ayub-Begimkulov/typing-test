@@ -193,7 +193,7 @@ export function TypingTest({
         {status === "started" ? "Started" : "Start typing"}
       </div>
       <div className={styles.typingTestTime}>
-        Time: {Math.floor(duration - timePassed / 1_000)}
+        Time: {Math.ceil(duration - timePassed / 1_000)}
       </div>
 
       <TypingProgress

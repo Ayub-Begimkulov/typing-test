@@ -5,13 +5,9 @@ import { cors } from "hono/cors";
 import english from "./tests/english/english-200.json" assert { type: "json" };
 import { shuffle } from "./utils/shuffle.js";
 import { getWordsRange } from "./utils/getWordsRange.js";
-import fsPromises from "fs/promises";
-import fs from "fs";
-import path from "path";
-import { pathFromSrc } from "./utils/pathFromSrc.js";
-import { random } from "./utils/random.js";
 import { stream } from "hono/streaming";
 import { Readable } from "stream";
+import { getRandomTestForType } from "./utils/getRandomTestForType.js";
 
 const app = new Hono();
 
@@ -34,25 +30,26 @@ app.get("/typing-tests/english", async (ctx) => {
 app.get("/typing-tests/:type", async (ctx) => {
   const type = ctx.req.param("type");
 
-  if (!testTypes.includes(type)) {
+  if (!testTypes.some((item) => item.type === type)) {
     return ctx.json(
       {
+        status: 404,
         message: "Invalid type",
       },
       404
     );
   }
 
-  const testsDir = pathFromSrc("./tests/", type);
-  const items = await fsPromises.readdir(testsDir);
-  const randomTest = items[random(0, items.length)]!;
-  const randomTestStream = fs.createReadStream(
-    path.resolve(testsDir, randomTest)
-  );
+  const streamOrError = await getRandomTestForType(type);
+
+  if ("status" in streamOrError) {
+    return ctx.json(streamOrError, streamOrError.status);
+  }
 
   ctx.header("Content-Type", "application/json");
+
   return stream(ctx, async (stream) => {
-    await stream.pipe(Readable.toWeb(randomTestStream));
+    await stream.pipe(Readable.toWeb(streamOrError));
   });
 });
 

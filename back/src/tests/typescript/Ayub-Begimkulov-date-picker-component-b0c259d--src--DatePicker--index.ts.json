@@ -1,0 +1,1 @@
+{"type":"typescript","text":"export { DatePicker } from './DatePicker';","words":[{"text":"export","type":"Keyword","range":[0,6]},{"text":"DatePicker","type":"Identifier","range":[9,19]},{"text":"from","type":"Identifier","range":[22,26]},{"text":"'./DatePicker'","type":"String","range":[27,41]}]}
