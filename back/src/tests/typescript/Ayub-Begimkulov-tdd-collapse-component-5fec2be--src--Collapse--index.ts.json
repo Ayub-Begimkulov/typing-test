@@ -1,1 +1,0 @@
-{"type":"typescript","text":"export { Collapse, CollapseItem } from './Collapse';","words":[{"text":"export","type":"Keyword","range":[0,6]},{"text":"Collapse","type":"Identifier","range":[9,17]},{"text":"CollapseItem","type":"Identifier","range":[19,31]},{"text":"from","type":"Identifier","range":[34,38]},{"text":"'./Collapse'","type":"String","range":[39,51]}]}
