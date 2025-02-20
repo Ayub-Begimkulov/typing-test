@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { TypingTest } from "./components/TypingTest";
+import { TypingTest } from "./features/TypingTest";
 import { Settings } from "./types/settings";
-import { SettingsModal } from "./components/SettingsModal";
-import { useTestQuery } from "./hooks/queries/useTestQuery";
+import { SettingsModal } from "./features/SettingsModal";
+import { useTestQuery } from "./shared/hooks/queries/useTestQuery";
+import { useLocalStorage } from "./shared/hooks/useLocalStorage";
 
 const DEFAULT_TYPE = "typescript";
 
 export function App() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [settings, setSettings] = useState<Settings>({
+  const [settings, setSettings] = useLocalStorage<Settings>("settings", {
     type: DEFAULT_TYPE,
     duration: 20,
+    width: 1200,
   });
 
   const { testData, status } = useTestQuery(settings.type);
@@ -34,9 +36,10 @@ export function App() {
 
     return (
       <TypingTest
-        timeDuration={settings.duration}
-        inputText={testData?.text ?? ""}
+        duration={settings.duration}
+        text={testData?.text ?? ""}
         wordsConfig={testData?.words ?? []}
+        width={settings.width}
       />
     );
   };

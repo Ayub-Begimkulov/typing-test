@@ -1,0 +1,15 @@
+@use "../../styles/varitable.scss" as variables;
+
+.word {
+  .wordLetter {
+    color: variables.$default-color;
+
+    &_correct {
+      color: variables.$correct-color;
+    }
+
+    &_error {
+      color: variables.$error-color;
+    }
+  }
+}

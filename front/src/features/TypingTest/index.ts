@@ -1,0 +1,1 @@
+export { TypingTest } from "./TypingTest";

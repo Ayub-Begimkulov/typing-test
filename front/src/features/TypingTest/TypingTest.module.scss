@@ -1,0 +1,22 @@
+.typingTest {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+
+  .typingTestTextarea {
+    padding: 0;
+    border: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .typingTestStatus {
+    margin-bottom: 6px;
+  }
+
+  .typingTestTime {
+    margin-bottom: 16px;
+  }
+}

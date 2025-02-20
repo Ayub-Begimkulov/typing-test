@@ -9,7 +9,7 @@ export function getTSCodeTokens(
   tokens: TSESTree.Token[],
   comments: TSESTree.Comment[]
 ) {
-  const result = [];
+  const result: (TSESTree.Token | TSESTree.Comment)[] = [];
 
   let tokensIndex = 0;
   let commentsIndex = 0;
@@ -18,7 +18,7 @@ export function getTSCodeTokens(
     const token = tokens[tokensIndex];
     const comment = comments[commentsIndex];
 
-    if (notWordTokens.includes(token.type)) {
+    if (token && notWordTokens.includes(token.type)) {
       tokensIndex++;
       continue;
     }
@@ -28,10 +28,10 @@ export function getTSCodeTokens(
 
     if (tokenRangeStart < commentRangeStart) {
       tokensIndex++;
-      result.push(token);
+      result.push(token!);
     } else {
       commentsIndex++;
-      result.push(comment);
+      result.push(comment!);
     }
   }
 
